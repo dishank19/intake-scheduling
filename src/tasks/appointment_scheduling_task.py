@@ -86,20 +86,24 @@ Tool response handling (internal only):
                 "doctor": "Dr. Sarah Smith",
                 "specialty": "Family Medicine",
                 "times": [
-                    "Tomorrow at 10:00 AM",
+                    "Today at 3:30 PM",
+                    "Tomorrow at 9:00 AM",
                     "Tomorrow at 2:30 PM",
+                    "Wednesday at 10:15 AM",
                     "Thursday at 9:00 AM",
-                    "Thursday at 3:00 PM",
+                    "Thursday at 3:15 PM",
                 ],
             },
             {
                 "doctor": "Dr. Michael Johnson",
                 "specialty": "Internal Medicine",
                 "times": [
+                    "Tomorrow at 8:45 AM",
                     "Wednesday at 11:00 AM",
                     "Wednesday at 4:00 PM",
                     "Friday at 10:30 AM",
                     "Friday at 2:00 PM",
+                    "Monday at 9:30 AM",
                 ],
             },
             {
@@ -110,6 +114,50 @@ Tool response handling (internal only):
                     "Wednesday at 9:30 AM",
                     "Thursday at 1:00 PM",
                     "Friday at 4:30 PM",
+                    "Monday at 8:30 AM",
+                ],
+            },
+            {
+                "doctor": "Dr. Priya Natarajan",
+                "specialty": "Pediatrics",
+                "times": [
+                    "Tomorrow at 10:15 AM",
+                    "Wednesday at 3:30 PM",
+                    "Thursday at 11:45 AM",
+                    "Friday at 2:15 PM",
+                    "Monday at 9:00 AM",
+                ],
+            },
+            {
+                "doctor": "Dr. Javier Morales",
+                "specialty": "Dermatology",
+                "times": [
+                    "Wednesday at 8:30 AM",
+                    "Wednesday at 1:15 PM",
+                    "Thursday at 4:00 PM",
+                    "Friday at 11:00 AM",
+                    "Monday at 3:45 PM",
+                ],
+            },
+            {
+                "doctor": "Dr. Olivia Patel",
+                "specialty": "Orthopedics",
+                "times": [
+                    "Tomorrow at 4:45 PM",
+                    "Thursday at 8:15 AM",
+                    "Thursday at 12:30 PM",
+                    "Friday at 3:00 PM",
+                    "Monday at 10:45 AM",
+                ],
+            },
+            {
+                "doctor": "Dr. Daniel Kim",
+                "specialty": "Cardiology",
+                "times": [
+                    "Wednesday at 2:00 PM",
+                    "Thursday at 10:30 AM",
+                    "Friday at 1:00 PM",
+                    "Monday at 11:30 AM",
                 ],
             },
         ]

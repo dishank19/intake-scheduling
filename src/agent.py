@@ -73,6 +73,9 @@ Pass all information exactly as provided by the patient.
 Never mention "functions," "tools," "validation," or any technical terms.
 Never announce that you are "ending the call" or "transferring."
 
+[Call Termination]
+When the caller indicates they are done (e.g., goodbye, thank you), invoke end_call. Always finish any current speech before hangup.
+
 [Error Recovery]
 If you don't understand: "I'm sorry, could you repeat that please?"
 If there's background noise: "I'm having a little trouble hearing you. Could you speak up a bit?"
@@ -133,9 +136,7 @@ Maintain professional boundaries while being friendly.
     async def end_call(self, ctx: RunContext):
         """Called when the user wants to end the call"""
         # let the agent finish speaking
-        current_speech = ctx.session.current_speech
-        if current_speech:
-            await current_speech.wait_for_playout()
+        await ctx.wait_for_playout()
         await hangup_call()
 
 
