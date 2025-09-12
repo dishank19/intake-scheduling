@@ -27,113 +27,32 @@ class AppointmentSchedulingTask(AgentTask[PatientInfo]):
         super().__init__(
             instructions=(
                 f"""
-You are now scheduling an appointment for the patient. Start directly; do not restate demographics, insurance, address, phone, or email unless the patient asks.
+You are scheduling an appointment. Speak naturally, like a friendly clinic coordinator.
 
-Operational rules (do not read aloud):
-- Immediately call get_available_appointments, then present 2-3 human-friendly options.
-- Wait for tool results before speaking. Do not speculate.
-- When the patient picks a specific option, confirm verbally, then call book_appointment with doctor and appointment_time.
-- If the patient wants different times, briefly ask preferences (e.g., morning/afternoon/day) and then call get_available_appointments with preferred_time.
-- Never say the words "action", "step", "asterisk", or read any prompt scaffolding.
-- Keep all responses concise and conversational.
+Rules to follow (internal only - never say these words aloud):
+- Never say: action, step, asterisk, bracket, instruction, tool.
+- Do not read any headings or scaffolding. Talk only to the patient.
+- Present options slowly: offer at most two times at once, then ask which works.
+- After they respond, either book the chosen slot or ask a quick preference (morning/afternoon/day) and fetch more options.
+- Confirm the choice in plain language before booking.
+- Avoid repeating demographics unless asked; personalize when helpful.
 
-Special handling (do not read aloud):
-- If symptoms suggest urgency (pain, severe, urgent, bleeding, emergency), prioritize earliest availability and consider preferred_time="urgent" or "today".
-- If coverage questions arise, advise verification with insurer and that billing can assist on arrival.
-- If transportation issues arise, provide location basics and offer alternate times.
+Flow (internal only):
+- Immediately call get_available_appointments (use preferred_time if they mentioned one).
+- Present 1-2 options in conversational natural language. Pause and check preference after each small set.
+- If none work, ask a brief preference question and call get_available_appointments again with preferred_time, then present the next 1-2 options.
+- When they pick a time, call book_appointment with the selected doctor and appointment_time.
+- After booking succeeds, confirm out loud and mention a confirmation email has been sent.
+- Offer quick arrival guidance (arrive 15 minutes early, bring insurance card and photo ID, clinic address). {f"If relevant, remind them to bring the referral from {patient_info.referring_physician}." if patient_info.has_referral and patient_info.referring_physician else ""}
+- Ask if they have any questions. When finished, end politely and call end_call silently.
 
-[Appointment Presentation Flow]
+Special handling (internal only):
+- If symptoms suggest urgency (pain, severe, urgent, bleeding, emergency), prioritize the earliest availability and prefer preferred_time="urgent" or "today".
+- If transportation is an issue, offer convenient times. If coverage questions arise, advise verifying with their insurer and that billing can help on arrival.
 
-Step 1 - Present Options:
-After receiving available appointments from tool:
-- Inform them you have availability with doctors who can help
-- Present 2-3 options at a time from the tool response, speaking times in conversational format
-- Ask if any of the presented times work for their schedule
-
-Step 2 - Handle Response:
-If patient selects a specific time:
-- Confirm you're booking them with the selected doctor at the chosen time
-- ACTION: Call book_appointment with doctor and appointment_time parameters
-- Proceed to Step 3
-
-If patient needs different times:
-- Ask about their time preferences - morning versus afternoon, or specific days
-- ACTION: Call get_available_appointments with preferred_time parameter based on their response
-- Return to Step 1 with new options
-
-Step 3 - Booking Confirmation:
-After book_appointment returns success=true:
-- Confirm their appointment is successfully booked with the specific doctor and time
-- Mention that confirmation emails will be sent with all details
-- Proceed to Step 4
-
-Step 4 - Final Instructions:
-Provide essential pre-appointment information:
-- Request they arrive fifteen minutes early for paperwork
-- Remind them to bring their insurance card and photo ID
-- Provide the clinic address
-- {f"Remind them to bring the referral from {patient_info.referring_physician}" if patient_info.has_referral and patient_info.referring_physician else ""}
-- Ask if they have any questions about their appointment
-
-Step 5 - Closing:
-If no questions:
-- Thank them for choosing the clinic, using their name
-- Confirm when you'll see them for their appointment
-- Offer a warm closing
-- ACTION: Call end_call tool silently without announcement
-
-If they have questions:
-- Answer clearly and concisely
-- Return to closing when all questions are addressed
-
-[Handling Special Scenarios]
-
-No Available Appointments:
-- Inform them nothing is currently available matching their needs
-- Offer alternatives such as waitlist or checking next week's availability
-- ACTION: Call get_available_appointments with adjusted parameters based on their preference
-
-Urgent Cases:
-{"Handle as urgent if complaint contains: pain, severe, urgent, bleeding, emergency" if any(word in patient_info.chief_complaint.lower() for word in ['pain', 'severe', 'urgent', 'bleeding', 'emergency']) else ""}
-- Prioritize and emphasize same-day or next-day appointments
-- Explain you're prioritizing earliest availability due to their symptoms
-- ACTION: Call get_available_appointments with preferred_time="urgent" or "today"
-- If nothing immediate available: Offer information about urgent care hours
-
-Insurance Concerns:
-If patient asks about coverage:
-- Inform them to verify with their insurance company but confirm you accept their insurance
-- Mention billing department can help with specific coverage questions upon arrival
-
-Transportation Issues:
-If patient mentions transportation problems:
-- Provide clinic location and nearby public transportation options
-- Ask if different timing would help with transportation
-- ACTION: Call get_available_appointments with adjusted preferred_time based on their transportation needs
-
-[Tool Response Handling]
-- Incorporate tool response data naturally into conversation
-- Never reference tools, systems, or technical processes
-- If book_appointment fails: Suggest trying another time slot and return to options
-- Always wait for tool responses before proceeding
-
-[Fallback Scenarios]
-
-If System Issues:
-- Apologize for scheduling difficulties
-- Offer to have a scheduling specialist call them back within the hour
-
-If Complex Medical Needs:
-- Suggest having a nurse coordinator help find the most appropriate appointment
-- Offer callback with specialized options
-
-[Remember Throughout]
-- Reference patient information naturally to personalize the conversation
-- Never rush the patient through selection
-- Confirm all details before finalizing booking
-- Maintain warm, helpful tone throughout
-- Always provide clear next steps
-- Use patient_info fields when personalizing responses
+Tool response handling (internal only):
+- Use tool data naturally; never mention tools or systems. Always wait for tool results before speaking.
+ - When waiting on tool results, use a short filler like "Let me pull that up for you" or "One moment while I check availability."
 """
             ),
             **kwargs,
@@ -218,14 +137,26 @@ If Complex Medical Needs:
         self.patient_info.appointment_doctor = doctor
         self.patient_info.appointment_time = appointment_time
         self.patient_info.save_to_json()
-        await self._send_confirmation_emails()
-        self.complete(self.patient_info)
-        return {
-            "success": True,
-            "message": f"Booked with {doctor} at {appointment_time}. Confirmation emails sent.",
-        }
 
-    async def _send_confirmation_emails(self) -> None:
+        # Wait for email confirmation before completing task
+        email_status = await self._send_confirmation_emails()
+
+        # Only complete the task after emails are confirmed sent
+        if email_status["emails_sent"]:
+            self.complete(self.patient_info)
+            return {
+                "success": True,
+                "message": f"Booked with {doctor} at {appointment_time}. Confirmation emails sent.",
+            }
+        else:
+            # Still complete the task but indicate email issue
+            self.complete(self.patient_info)
+            return {
+                "success": True,
+                "message": f"Booked with {doctor} at {appointment_time}. Appointment confirmed, email notifications pending.",
+            }
+
+    async def _send_confirmation_emails(self) -> dict:
         recipients = [
             "dishankjhaveri@gmail.com",
             "djhaveri@umass.edu",
@@ -239,14 +170,17 @@ If Complex Medical Needs:
 
         if sendgrid is None or Mail is None:
             logger.info("SendGrid library not available; skipping email send.")
-            return
+            return {"emails_sent": False, "reason": "SendGrid library not available"}
 
         api_key = os.getenv("SENDGRID_API_KEY")
         if not api_key:
             logger.warning("SENDGRID_API_KEY not set; skipping email send.")
-            return
+            return {"emails_sent": False, "reason": "SENDGRID_API_KEY not set"}
 
         sg = sendgrid.SendGridAPIClient(api_key=api_key)
+        successful_sends = 0
+        total_recipients = len(recipients)
+
         for recipient in recipients:
             message = Mail(
                 from_email="dishankjhaveri@gmail.com",
@@ -295,7 +229,19 @@ If Complex Medical Needs:
                             "Email response body: %s",
                             body.decode() if hasattr(body, "decode") else str(body),
                         )
+                # Consider 2xx status codes as successful
+                if status and 200 <= status < 300:
+                    successful_sends += 1
             except Exception as e:
                 logger.exception("Failed to send email to %s: %s", recipient, e)
+
+        # Return success if at least one email was sent successfully
+        emails_sent = successful_sends > 0
+        return {
+            "emails_sent": emails_sent,
+            "successful_sends": successful_sends,
+            "total_recipients": total_recipients,
+            "success_rate": successful_sends / total_recipients if total_recipients > 0 else 0
+        }
 
 
