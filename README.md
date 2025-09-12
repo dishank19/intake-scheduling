@@ -17,6 +17,27 @@ This repository contains a production-ready voice AI agent built on LiveKit Agen
   - Presents small sets (1–2 at a time) of realistic sample slots across multiple providers and days
   - Books selected slot, then sends confirmation emails via SendGrid
 - Telephony:
+## Sample providers and timings (dummy data)
+
+Used by `src/tasks/appointment_scheduling_task.py#get_available_appointments` to present options. Times are illustrative and rotate across near‑term days.
+
+- Dr. Sarah Smith — Family Medicine
+  - Today 3:30 PM; Tomorrow 9:00 AM, 2:30 PM; Wed 10:15 AM; Thu 9:00 AM, 3:15 PM
+- Dr. Michael Johnson — Internal Medicine
+  - Tomorrow 8:45 AM; Wed 11:00 AM, 4:00 PM; Fri 10:30 AM, 2:00 PM; Mon 9:30 AM
+- Dr. Emily Chen — General Practice
+  - Tomorrow 11:30 AM; Wed 9:30 AM; Thu 1:00 PM; Fri 4:30 PM; Mon 8:30 AM
+- Dr. Priya Natarajan — Pediatrics
+  - Tomorrow 10:15 AM; Wed 3:30 PM; Thu 11:45 AM; Fri 2:15 PM; Mon 9:00 AM
+- Dr. Javier Morales — Dermatology
+  - Wed 8:30 AM, 1:15 PM; Thu 4:00 PM; Fri 11:00 AM; Mon 3:45 PM
+- Dr. Olivia Patel — Orthopedics
+  - Tomorrow 4:45 PM; Thu 8:15 AM, 12:30 PM; Fri 3:00 PM; Mon 10:45 AM
+- Dr. Daniel Kim — Cardiology
+  - Wed 2:00 PM; Thu 10:30 AM; Fri 1:00 PM; Mon 11:30 AM
+
+The agent presents 1–2 options at a time in natural language and asks for preference before continuing.
+
   - Inbound calling via LiveKit SIP; dispatch rules included
   - Mid‑call termination tool (`end_call`) and LiveKit‑recommended hangup flow (room delete after playout)
 
