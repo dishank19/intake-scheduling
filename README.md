@@ -1,111 +1,107 @@
-<a href="https://livekit.io/">
-  <img src="./.github/assets/livekit-mark.png" alt="LiveKit logo" width="100" height="100">
-</a>
+# Assort Health – Voice AI Intake & Scheduling Agent (LiveKit)
 
-# LiveKit Agents Starter - Python
+This repository contains a production-ready voice AI agent built on LiveKit Agents for Python. It answers inbound phone calls, performs a structured medical intake, validates addresses against OpenStreetMap (Nominatim), offers appointment options, books a slot, and sends confirmation emails. It is designed to satisfy the Assort Health take‑home requirements end‑to‑end.
 
-A complete starter project for building voice AI apps with [LiveKit Agents for Python](https://github.com/livekit/agents).
+## What it does (requirements mapping)
 
-The starter project includes:
+- Patient Intake (voice):
+  - Collects: name, date of birth, insurance payer and ID, referral details, chief complaint, address, phone, optional email
+  - Confirms each item in natural language before persisting
+  - Address validation: calls OpenStreetMap Nominatim and returns a suggested normalized address for confirmation (fast fallbacks; always proposes a suggestion)
+- Appointment Scheduling:
+  - Presents small sets (1–2 at a time) of realistic sample slots across multiple providers and days
+  - Books selected slot, then sends confirmation emails via SendGrid
+- Telephony:
+  - Inbound calling via LiveKit SIP; dispatch rules included
+  - Mid‑call termination tool (`end_call`) and LiveKit‑recommended hangup flow (room delete after playout)
 
-- A simple voice AI assistant based on the [Voice AI quickstart](https://docs.livekit.io/agents/start/voice-ai/)
-- Voice AI pipeline based on [OpenAI](https://docs.livekit.io/agents/integrations/llm/openai/), [Cartesia](https://docs.livekit.io/agents/integrations/tts/cartesia/), and [Deepgram](https://docs.livekit.io/agents/integrations/llm/deepgram/)
-  - Easily integrate your preferred [LLM](https://docs.livekit.io/agents/integrations/llm/), [STT](https://docs.livekit.io/agents/integrations/stt/), and [TTS](https://docs.livekit.io/agents/integrations/tts/) instead, or swap to a realtime model like the [OpenAI Realtime API](https://docs.livekit.io/agents/integrations/realtime/openai)
-- Eval suite based on the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/build/testing/)
-- [LiveKit Turn Detector](https://docs.livekit.io/agents/build/turns/turn-detector/) for contextually-aware speaker detection, with multilingual support
-- [LiveKit Cloud enhanced noise cancellation](https://docs.livekit.io/home/cloud/noise-cancellation/)
-- Integrated [metrics and logging](https://docs.livekit.io/agents/build/metrics/)
+## Tech stack
 
-This starter app is compatible with any [custom web/mobile frontend](https://docs.livekit.io/agents/start/frontend/) or [SIP-based telephony](https://docs.livekit.io/agents/start/telephony/).
+- LiveKit Agents (Python): session, tools, workflows, telephony
+- STT: AssemblyAI; LLM: OpenAI; TTS: Inworld (easily swappable)
+- Address validation: OpenStreetMap Nominatim API
+- Email: SendGrid
 
-## Dev Setup
+## Repository layout
 
-Clone the repository and install dependencies to a virtual environment:
+- `src/agent.py` – Agent orchestration, intro/small talk, task chaining, end‑call tool (LiveKit hangup)
+- `src/tasks/patient_intake_task.py` – Intake workflow, per‑field confirmation, address/phone/DOB validation tools
+- `src/tasks/appointment_scheduling_task.py` – Appointment options and booking; synchronous SendGrid confirmation before task completes
+- `dispatch-rule.json` – Example LiveKit dispatch rule for inbound telephony
+- `inbound-trunk.json` – Example SIP trunk descriptor (reference)
 
-```console
-cd agent-starter-python
-uv sync
-```
+## Environment variables
 
-Set up the environment by copying `.env.example` to `.env.local` and filling in the required values:
+Create `.env.local` and set:
 
-- `LIVEKIT_URL`: Use [LiveKit Cloud](https://cloud.livekit.io/) or [run your own](https://docs.livekit.io/home/self-hosting/)
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-- `OPENAI_API_KEY`: [Get a key](https://platform.openai.com/api-keys) or use your [preferred LLM provider](https://docs.livekit.io/agents/integrations/llm/)
-- `DEEPGRAM_API_KEY`: [Get a key](https://console.deepgram.com/) or use your [preferred STT provider](https://docs.livekit.io/agents/integrations/stt/)
-- `CARTESIA_API_KEY`: [Get a key](https://play.cartesia.ai/keys) or use your [preferred TTS provider](https://docs.livekit.io/agents/integrations/tts/)
+- LIVEKIT_URL
+- LIVEKIT_API_KEY
+- LIVEKIT_API_SECRET
+- OPENAI_API_KEY
+- ASSEMBLYAI_API_KEY
+- SENDGRID_API_KEY
 
-You can load the LiveKit environment automatically using the [LiveKit CLI](https://docs.livekit.io/home/cli/cli-setup):
+Optional (if you swap providers):
+- CARTESIA_API_KEY, ELEVENLABS_API_KEY, etc.
+
+## Setup
 
 ```bash
-lk app env -w .env.local
-```
-
-## Run the agent
-
-Before your first run, you must download certain models such as [Silero VAD](https://docs.livekit.io/agents/build/turns/vad/) and the [LiveKit turn detector](https://docs.livekit.io/agents/build/turns/turn-detector/):
-
-```console
+cd /Users/dishankj/Workspace/assort_test
+uv sync
 uv run python src/agent.py download-files
 ```
 
-Next, run this command to speak to your agent directly in your terminal:
+## Running
 
-```console
+### Console test (no phone)
+```bash
 uv run python src/agent.py console
 ```
 
-To run the agent for use with a frontend or telephony, use the `dev` command:
-
-```console
+### Telephony (inbound)
+1) Ensure agent runs with a name for explicit dispatch (configured in `src/agent.py` entrypoint via LiveKit CLI app). Start the worker in dev:
+```bash
 uv run python src/agent.py dev
 ```
+2) Create a dispatch rule that routes inbound calls to a room and dispatches this agent (example in `dispatch-rule.json`).
+```bash
+lk sip dispatch create dispatch-rule.json
+```
+3) Point your SIP provider number at LiveKit. Call the number to reach the agent.
 
-In production, use the `start` command:
+LiveKit hangup pattern is implemented per the docs (finish playout then delete the room). Reference: https://docs.livekit.io/agents/start/telephony/#hangup
 
-```console
-uv run python src/agent.py start
+## How it meets the assignment
+
+- Collects and confirms: name, DOB, insurance payer/ID, referral and physician, chief complaint, address (validated), phone, optional email
+- Offers multiple realistic appointment options by provider and time; books chosen slot
+- Sends confirmation emails (SendGrid) after booking completes
+- Works over a phone number via SIP into LiveKit
+
+## Notes on address validation
+
+- Uses Nominatim with fast query fallbacks (full, reduced) and short timeouts
+- Always returns a `suggested_address`; agent reads back and asks for confirmation
+- If suggestion is declined, agent re-collects missing parts and revalidates
+
+## Commands cheat‑sheet
+
+```bash
+# Install deps
+uv sync
+
+# Download agent model assets (VAD, turn detector, etc.)
+uv run python src/agent.py download-files
+
+# Run locally with console UI
+uv run python src/agent.py console
+
+# Run for telephony/dev
+uv run python src/agent.py dev
+
+# Create dispatch rule (after configuring SIP trunk in LiveKit Cloud)
+lk sip dispatch create dispatch-rule.json
 ```
 
-## Frontend & Telephony
 
-Get started quickly with our pre-built frontend starter apps, or add telephony support:
-
-| Platform | Link | Description |
-|----------|----------|-------------|
-| **Web** | [`livekit-examples/agent-starter-react`](https://github.com/livekit-examples/agent-starter-react) | Web voice AI assistant with React & Next.js |
-| **iOS/macOS** | [`livekit-examples/agent-starter-swift`](https://github.com/livekit-examples/agent-starter-swift) | Native iOS, macOS, and visionOS voice AI assistant |
-| **Flutter** | [`livekit-examples/agent-starter-flutter`](https://github.com/livekit-examples/agent-starter-flutter) | Cross-platform voice AI assistant app |
-| **React Native** | [`livekit-examples/voice-assistant-react-native`](https://github.com/livekit-examples/voice-assistant-react-native) | Native mobile app with React Native & Expo |
-| **Android** | [`livekit-examples/agent-starter-android`](https://github.com/livekit-examples/agent-starter-android) | Native Android app with Kotlin & Jetpack Compose |
-| **Web Embed** | [`livekit-examples/agent-starter-embed`](https://github.com/livekit-examples/agent-starter-embed) | Voice AI widget for any website |
-| **Telephony** | [📚 Documentation](https://docs.livekit.io/agents/start/telephony/) | Add inbound or outbound calling to your agent |
-
-For advanced customization, see the [complete frontend guide](https://docs.livekit.io/agents/start/frontend/).
-
-## Tests and evals
-
-This project includes a complete suite of evals, based on the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/build/testing/). To run them, use `pytest`.
-
-```console
-uv run pytest
-```
-
-## Using this template repo for your own project
-
-Once you've started your own project based on this repo, you should:
-
-1. **Check in your `uv.lock`**: This file is currently untracked for the template, but you should commit it to your repository for reproducible builds and proper configuration management. (The same applies to `livekit.toml`, if you run your agents in LiveKit Cloud)
-
-2. **Remove the git tracking test**: Delete the "Check files not tracked in git" step from `.github/workflows/tests.yml` since you'll now want this file to be tracked. These are just there for development purposes in the template repo itself.
-
-3. **Add your own repository secrets**: You must [add secrets](https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/using-secrets-in-github-actions) for `OPENAI_API_KEY` or your other LLM provider so that the tests can run in CI.
-
-## Deploying to production
-
-This project is production-ready and includes a working `Dockerfile`. To deploy it to LiveKit Cloud or another environment, see the [deploying to production](https://docs.livekit.io/agents/ops/deployment/) guide.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
