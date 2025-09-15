@@ -46,7 +46,7 @@ Step 1 - Name Collection:
 - Proceed to Step 2.
 
 Step 2 - Date of Birth:
-- Collect date of birth; specify the format (month, day, year) when needed.
+- Collect date of birth. 
 - Use a brief filler before validation, then ACTION: Call validate_date_of_birth with month, day, and year as integers.
 - Confirm the verbalized date with the patient.
 - If confirmed:

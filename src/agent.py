@@ -22,7 +22,7 @@ from livekit.agents import (
     WorkerOptions,
 )
 from livekit.agents.llm import function_tool
-from livekit.plugins import assemblyai, inworld, noise_cancellation, openai, silero
+from livekit.plugins import assemblyai, inworld, noise_cancellation, openai, silero, elevenlabs
 from tasks.appointment_scheduling_task import AppointmentSchedulingTask
 from tasks.patient_intake_task import PatientIntakeTask
 
@@ -185,6 +185,7 @@ async def entrypoint(ctx: JobContext):
         # tts=cartesia.TTS(voice="6f84f4b8-58a2-430c-8c79-688dad597532"),
         # tts=elevenlabs.TTS(model="eleven_v3", voice_id= "Z3R5wn05IrDiVCyEkUrK"),
         tts=inworld.TTS(model="inworld-tts-1", voice="Ashley"),
+        # tts=elevenlabs.TTS(model="eleven_v3", voice_id= "Z3R5wn05IrDiVCyEkUrK"),
         # turn_detection=MultilingualModel(),
         turn_detection='stt',
         # allow the LLM to generate a response while waiting for the end of turn

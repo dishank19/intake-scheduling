@@ -207,13 +207,13 @@ Tool response handling (internal only):
     async def _send_confirmation_emails(self) -> dict:
         recipients = [
             "dishankjhaveri@gmail.com",
-            # "djhaveri@umass.edu",
-            "jeff@assorthealth.com",
-            "connor@assorthealth.com",
-            "cole@assorthealth.com",
-            "jciminelli@assorthealth.com",
-            "akumar@assorthealth.com",
-            "riley@assorthealth.com",
+            "djhaveri@umass.edu",
+            # "jeff@assorthealth.com",
+            # "connor@assorthealth.com",
+            # "cole@assorthealth.com",
+            # "jciminelli@assorthealth.com",
+            # "akumar@assorthealth.com",
+            # "riley@assorthealth.com",
         ]
 
         if sendgrid is None or Mail is None:
