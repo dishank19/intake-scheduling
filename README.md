@@ -1,4 +1,4 @@
-# Assort Health – Voice AI Intake & Scheduling Agent (LiveKit)
+Voice AI Intake & Scheduling Agent (LiveKit)
 
 Deployment status
 - Repo: https://github.com/dishank19/assort_test
