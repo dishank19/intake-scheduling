@@ -6,7 +6,7 @@ Deployment status
 - Phone number: +1 408 549 7080
 - The number can be called anytime to reach the agent
 
-This repository contains a production-ready voice AI agent built on LiveKit Agents for Python. It answers inbound phone calls, performs a structured medical intake, validates addresses against OpenStreetMap (Nominatim), offers appointment options, books a slot, and sends confirmation emails. It is designed to satisfy the Assort Health take‑home requirements end‑to‑end.
+This repository contains a production-ready voice AI agent built on LiveKit Agents for Python. It answers inbound phone calls, performs a structured medical intake, validates addresses against OpenStreetMap (Nominatim), offers appointment options, books a slot, and sends confirmation emails. 
 
 ## What it does (requirements mapping)
 
